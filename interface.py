@@ -1,20 +1,8 @@
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from chat_memory import ChatMemory
+from model_loader import load_model
 
-MODEL_NAME = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-
-# Load model & tokenizer
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-model = AutoModelForCausalLM.from_pretrained(MODEL_NAME)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
-
-# Set pad_token if not defined
-if tokenizer.pad_token is None:
-    tokenizer.pad_token = tokenizer.eos_token
-
-def generate_reply(user_input):
-    prompt = f"<|system|>\nYou are a helpful assistant.\n<|user|>\n{user_input}\n<|assistant|>\n"
+def generate_reply(model, tokenizer, device, context, user_input):
+    prompt = f"<|system|>\nYou are a helpful assistant.\n{context}\n<|user|>\n{user_input}\n<|assistant|>\n"
     inputs = tokenizer(prompt, return_tensors="pt").to(device)
 
     output_ids = model.generate(
@@ -37,12 +25,19 @@ def generate_reply(user_input):
 
 def main():
     print("\n🤖 Chatbot ready. Type '/exit' to quit.\n")
+
+    model, tokenizer, device = load_model()
+    memory = ChatMemory(max_turns=3)
+
     while True:
         user_input = input("You: ")
         if user_input.lower() == "/exit":
             print("Exiting chatbot. Goodbye!")
             break
-        bot_reply = generate_reply(user_input)
+
+        context = memory.get_context()
+        bot_reply = generate_reply(model, tokenizer, device, context, user_input)
+        memory.add(user_input, bot_reply)
         print(f"Bot: {bot_reply}\n")
 
 if __name__ == "__main__":

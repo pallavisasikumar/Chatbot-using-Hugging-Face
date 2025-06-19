@@ -1,5 +1,5 @@
 class ChatMemory:
-    def _init_(self, max_turns=3):
+    def __init__(self, max_turns=3):
         self.history = []
         self.max_turns = max_turns
 
@@ -9,4 +9,4 @@ class ChatMemory:
             self.history.pop(0)
 
     def get_context(self):
-        return "\n".join([f"{u}\n{b}" for u, b in self.history])
+        return self.history
